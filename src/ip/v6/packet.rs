@@ -38,7 +38,7 @@ sized!(Packet,
 impl<B: AsRef<[u8]>> fmt::Debug for Packet<B> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.debug_struct("ip::v6::Packet")
-			.finish()
+			.finish() 
 	}
 }
 
