@@ -24,9 +24,9 @@ pub struct Packet<B> {
 
 sized!(Packet,
 	header {
-		min:  0,
-		max:  0,
-		size: 0,
+		min:  40,
+		max:  40,
+		size: 40,
 	}
 
 	payload {
