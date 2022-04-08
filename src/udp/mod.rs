@@ -43,7 +43,7 @@ pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
 		}
 
 		ip::Packet::V6(ref _packet) => {
-			unimplemented!();
+			unimplemented!("There is no checksum in ipv6 packet")
 		}
 	};
 
