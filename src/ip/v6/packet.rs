@@ -217,3 +217,187 @@ impl<B: AsRef<[u8]>> Packet<B> {
         ])
     }
 }
+impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
+    pub fn set_traffic_class(&mut self, value: u8) -> Result<&mut Self> {
+        let old0 = self.buffer.as_ref()[0];
+        let old1 = self.buffer.as_ref()[1];
+        self.buffer.as_mut()[0] = (old0 & 0b1111_0000) | (value >> 4);
+        self.buffer.as_mut()[1] = (old1 & 0b0000_1111) | (value << 4);
+
+        Ok(self)
+    }
+    /// The flow label in 20-bit.
+    pub fn set_flow_label(&mut self, value: u32) -> Result<&mut Self> {
+        let b = value.to_be_bytes();
+        let old1 = self.buffer.as_ref()[1];
+
+        self.buffer.as_mut()[1] = (old1 & 0b1111_0000) | (b[1] & 0b0000_1111);
+        self.buffer.as_mut()[2] = b[2];
+        self.buffer.as_mut()[3] = b[3];
+
+        Ok(self)
+    }
+    pub fn set_payload_length(&mut self, value: u16) -> Result<&mut Self> {
+        let b = value.to_be_bytes();
+        self.buffer.as_mut()[4] = b[0];
+        self.buffer.as_mut()[5] = b[1];
+
+        Ok(self)
+    }
+    pub fn set_next_header(&mut self, value: u8) -> Result<&mut Self> {
+        self.buffer.as_mut()[6] = value;
+        Ok(self)
+    }
+
+    pub fn set_hop_limit(&mut self, value: u8) -> Result<&mut Self> {
+        self.buffer.as_mut()[7] = value;
+
+        Ok(self)
+    }
+
+    pub fn set_source(&mut self, value: Ipv6Addr) -> Result<&mut Self> {
+        self.buffer.as_mut()[8..24].copy_from_slice(&value.octets());
+
+        Ok(self)
+    }
+    pub fn set_destination(&mut self, value: Ipv6Addr) -> Result<&mut Self> {
+        self.buffer.as_mut()[24..40].copy_from_slice(&value.octets());
+
+        Ok(self)
+    }
+    pub fn checked(&mut self) -> Checked<'_, B> {
+        Checked { packet: self }
+    }
+}
+pub struct Checked<'a, B: AsRef<[u8]> + AsMut<[u8]>> {
+    packet: &'a mut Packet<B>,
+}
+
+impl<'a, B: AsRef<[u8]> + AsMut<[u8]> + 'a> Checked<'a, B> {
+    pub fn set_traffic_class(&mut self, value: u8) -> Result<&mut Self> {
+        self.packet.set_traffic_class(value)?;
+
+        Ok(self)
+    }
+    /// The flow label in 20-bit.
+    pub fn set_flow_label(&mut self, value: u32) -> Result<&mut Self> {
+        self.packet.set_flow_label(value)?;
+
+        Ok(self)
+    }
+    pub fn set_payload_length(&mut self, value: u16) -> Result<&mut Self> {
+        self.packet.set_payload_length(value)?;
+
+        Ok(self)
+    }
+    pub fn set_next_header(&mut self, value: u8) -> Result<&mut Self> {
+        self.packet.set_next_header(value)?;
+
+        Ok(self)
+    }
+
+    pub fn set_hop_limit(&mut self, value: u8) -> Result<&mut Self> {
+        self.packet.set_hop_limit(value)?;
+
+        Ok(self)
+    }
+
+    pub fn set_source(&mut self, value: Ipv6Addr) -> Result<&mut Self> {
+        self.packet.set_source(value)?;
+
+        Ok(self)
+    }
+    pub fn set_destination(&mut self, value: Ipv6Addr) -> Result<&mut Self> {
+        self.packet.set_destination(value)?;
+
+        Ok(self)
+    }
+}
+
+// impl<'a, B: AsRef<[u8]> + AsMut<[u8]>> Drop for Checked<'a, B> {
+// 	fn drop(&mut self) {
+// 		self.packet.update_checksum().unwrap();
+// 	}
+// }
+
+#[cfg(test)]
+mod test {
+    use std::net::Ipv6Addr;
+
+    use crate::AsPacket;
+    use crate::PacketMut;
+    use crate::ether;
+    use crate::ip;
+    use crate::packet::Packet;
+    use crate::udp;
+
+    #[test]
+    fn values() {
+        let raw = [
+            0x00u8, 0x23, 0x69, 0x63, 0x59, 0xbe, 0xe4, 0xb3, 0x18, 0x26, 0x63, 0xa3, 0x08, 0x00,
+            0x45, 0x00, 0x00, 0x42, 0x47, 0x07, 0x40, 0x00, 0x40, 0x11, 0x6e, 0xcc, 0xc0, 0xa8,
+            0x01, 0x89, 0xc0, 0xa8, 0x01, 0xfe, 0xba, 0x2f, 0x00, 0x35, 0x00, 0x2e, 0x1d, 0xf8,
+            0xbc, 0x81, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x61,
+            0x70, 0x69, 0x0c, 0x73, 0x74, 0x65, 0x61, 0x6d, 0x70, 0x6f, 0x77, 0x65, 0x72, 0x65,
+            0x64, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x1c, 0x00, 0x01,
+        ];
+
+        let ether = ether::Packet::new(&raw[..]).unwrap();
+        let ip = ip::v4::Packet::new(ether.payload()).unwrap();
+        let udp = udp::Packet::new(ip.payload()).unwrap();
+
+        assert!(ip.is_valid());
+        assert!(udp.is_valid(&ip::Packet::from(&ip)));
+
+        assert_eq!(ether.destination(), "00:23:69:63:59:be".parse().unwrap());
+        assert_eq!(ether.source(), "e4:b3:18:26:63:a3".parse().unwrap());
+        assert_eq!(ether.protocol(), ether::Protocol::Ipv4);
+    }
+
+    #[test]
+    fn values_ipv6() {
+        let raw = hex::decode("30b5c2eb4cb0080027aff83f86dd60000000005c11ff2607f2c0f00fb00100000000faceb00c200105900000000000000000451f1f6210f610f6005c464e15000001fb7aff572ebc6869000199101f5000022607f2c0f00fb00100000000faceb00c001c000199101f5000000005011c10000000000199101f500164ff00000500022607f2c0f00fb00100000000faceb00c").unwrap();
+        let ether = ether::Packet::new(&raw[..]).unwrap();
+        let ip = ip::v6::Packet::new(ether.payload()).unwrap();
+        let _ = udp::Packet::new(ip.payload()).unwrap();
+
+        assert_eq!(ether.destination(), "30:b5:c2:eb:4c:b0".parse().unwrap());
+        assert_eq!(ether.source(), "08:00:27:af:f8:3f".parse().unwrap());
+        assert_eq!(
+            ip.source(),
+            "2607:f2c0:f00f:b001::face:b00c"
+                .parse::<Ipv6Addr>()
+                .unwrap()
+        );
+        assert_eq!(
+            ip.destination(),
+            "2001:590::451f:1f62".parse::<Ipv6Addr>().unwrap()
+        );
+
+
+        assert_eq!(ether.protocol(), ether::Protocol::Ipv6);
+    }
+
+    #[test]
+    fn values_set_ipv6() {
+        let mut raw = hex::decode("30b5c2eb4cb0080027aff83f86dd60000000005c11ff2607f2c0f00fb00100000000faceb00c200105900000000000000000451f1f6210f610f6005c464e15000001fb7aff572ebc6869000199101f5000022607f2c0f00fb00100000000faceb00c001c000199101f5000000005011c10000000000199101f500164ff00000500022607f2c0f00fb00100000000faceb00c").unwrap();
+        let mut ether = ether::Packet::new(&mut raw[..]).unwrap();
+        let mut ip = ip::v6::Packet::no_payload(ether.payload_mut()).unwrap();
+        
+
+        assert_eq!(
+            ip.source(),
+            "2607:f2c0:f00f:b001::face:b00c"
+                .parse::<Ipv6Addr>()
+                .unwrap()
+        );
+        assert_eq!(
+            ip.destination(),
+            "2001:590::451f:1f62".parse::<Ipv6Addr>().unwrap()
+        );
+
+        ip.set_destination("2001:590::451f:1f61".parse::<Ipv6Addr>().unwrap());
+
+        assert_eq!(ip.destination(), "2001:590::451f:1f61".parse::<Ipv6Addr>().unwrap());
+    }
+}
