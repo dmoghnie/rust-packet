@@ -3,18 +3,13 @@ name    = "packet"
 version = "0.1.2"
 edition = "2018"
 
-authors = ["meh. <meh@schizofreni.co>"]
-license = "WTFPL"
 
-description = "Network packet handling."
-repository  = "https://github.com/meh/rust-packet"
-keywords    = ["packet", "network", "ip", "tcp", "udp"]
 
 [dependencies]
-thiserror = "1"
-bitflags  = "1"
-byteorder = "1"
-hwaddr    = "0.1"
+thiserror = "1.0.31"
+bitflags  = "1.3.2"
+byteorder = "1.2.7"
+hwaddr    = "0.1.7"
 
 [dev-dependencies]
 hex = "0.4.3"

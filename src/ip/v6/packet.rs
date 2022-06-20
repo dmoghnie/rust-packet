@@ -17,6 +17,7 @@ use crate::packet::{AsPacket, AsPacketMut, Packet as P, PacketMut as PM};
 use std::fmt;
 use std::net::Ipv6Addr;
 
+
 /// IPv6 packet parser.
 #[derive(Clone)]
 pub struct Packet<B> {
@@ -33,7 +34,7 @@ header {
 payload {
     min:  0,
     max:  u16::max_value() as usize - 40,
-    size: p => (p.payload_length() as usize).saturating_sub(40),
+    size: p => p.payload_length() as usize,
 });
 
 impl<B: AsRef<[u8]>> fmt::Debug for Packet<B> {
@@ -83,6 +84,16 @@ impl<B: AsRef<[u8]>> Packet<B> {
         }
 
         Ok(packet)
+    }
+}
+
+impl Default for Packet<crate::buffer::Dynamic> {
+    fn default() -> Self {        
+        use crate::buffer::Dynamic;
+        let mut buffer = Dynamic::default();
+        
+        buffer[0] = (6 << 4);
+        Self { buffer }
     }
 }
 
@@ -325,6 +336,7 @@ mod test {
     use std::net::Ipv6Addr;
 
     use crate::AsPacket;
+    use crate::Builder;
     use crate::PacketMut;
     use crate::ether;
     use crate::ip;
@@ -399,5 +411,22 @@ mod test {
         ip.set_destination("2001:590::451f:1f61".parse::<Ipv6Addr>().unwrap());
 
         assert_eq!(ip.destination(), "2001:590::451f:1f61".parse::<Ipv6Addr>().unwrap());
+    }
+
+    #[test]
+    fn builder() {
+        let mut raw = hex::decode("30b5c2eb4cb0080027aff83f86dd60000000005c11ff2607f2c0f00fb00100000000faceb00c200105900000000000000000451f1f6210f610f6005c464e15000001fb7aff572ebc6869000199101f5000022607f2c0f00fb00100000000faceb00c001c000199101f5000000005011c10000000000199101f500164ff00000500022607f2c0f00fb00100000000faceb00c").unwrap();
+        let mut ether = ether::Packet::new(&mut raw[..]).unwrap();
+        let mut ip = ip::v6::Packet::no_payload(ether.payload_mut()).unwrap();
+
+        let new_ip = ip::v6::Builder::default().traffic_class(ip.traffic_class())
+        .unwrap().destination(ip.destination())
+        .unwrap().next_header(ip.next_header())
+        .unwrap().flow_label(ip.flow_label())
+        .unwrap().source(ip.source())
+        .unwrap().hop_limit(ip.hop_limit())
+        .unwrap().payload(ip.payload())
+        .unwrap().build().unwrap();        
+        assert_eq!(ip.as_ref().to_vec(), new_ip);
     }
 }
