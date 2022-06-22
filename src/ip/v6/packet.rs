@@ -34,7 +34,7 @@ header {
 payload {
     min:  0,
     max:  u16::max_value() as usize - 40,
-    size: p => p.payload_length() as usize,
+    size: p => (p.payload_length() - 40) as usize,
 });
 
 impl<B: AsRef<[u8]>> fmt::Debug for Packet<B> {

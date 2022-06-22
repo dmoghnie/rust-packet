@@ -160,7 +160,7 @@ impl<B: AsRef<[u8]>> Packet<B> {
 
 	/// Data offset.
 	pub fn offset(&self) -> u8 {
-		self.buffer.as_ref()[12] >> 4
+		self.buffer.as_ref()[11] >> 4
 	}
 
 	/// Packet flags.
