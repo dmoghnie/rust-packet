@@ -128,7 +128,7 @@ impl<B: AsRef<[u8]>> P for Packet<B> {
 	fn split(&self) -> (&[u8], &[u8]) {
 		let offset = self.offset() as usize;
 		// let header_len = self.header().len();
-		self.buffer.as_ref().split_at(offset * 4 - 20)
+		self.buffer.as_ref().split_at(offset * 4 )
 	}
 }
 
@@ -136,7 +136,7 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> PM for Packet<B> {
 	fn split_mut(&mut self) -> (&mut [u8], &mut [u8]) {
 		let offset = self.offset() as usize;
 		// let header_len = self.header().len();
-		self.buffer.as_mut().split_at_mut(offset * 4 - 20)
+		self.buffer.as_mut().split_at_mut(offset * 4)
 	}
 }
 
