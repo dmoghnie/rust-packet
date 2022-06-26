@@ -38,7 +38,7 @@ sized!(Packet,
 	payload {
 		min:  0,
 		max:  u16::max_value() as usize - 60,
-		size: p => p.buffer.as_ref().len() - (p.header().len()),
+		size: p => p.buffer.as_ref().len() - (p.offset() as usize * 4),
 		
 	});
 
