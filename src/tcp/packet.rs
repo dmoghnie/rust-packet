@@ -39,7 +39,6 @@ sized!(Packet,
 		min:  0,
 		max:  u16::max_value() as usize - 60,
 		size: p => p.buffer.as_ref().len() - (p.offset() as usize * 4),
-		
 	});
 
 impl<B: AsRef<[u8]>> fmt::Debug for Packet<B> {
@@ -75,9 +74,9 @@ impl<B: AsRef<[u8]>> Packet<B> {
 			Err(Error::SmallBuffer)?
 		}
 
-		// if packet.buffer.as_ref().len() < (packet.offset() as usize * 4 + 20){
-		// 	Err(Error::SmallBuffer)?
-		// }
+		if packet.buffer.as_ref().len() < packet.offset() as usize * 4 {
+			Err(Error::SmallBuffer)?
+		}
 
 		Ok(packet)
 	}
@@ -127,15 +126,13 @@ impl<'a, B: AsRef<[u8]> + AsMut<[u8]>> AsPacketMut<'a, Packet<&'a mut [u8]>> for
 impl<B: AsRef<[u8]>> P for Packet<B> {
 	fn split(&self) -> (&[u8], &[u8]) {
 		let offset = self.offset() as usize;
-		// let header_len = self.header().len();
-		self.buffer.as_ref().split_at(offset * 4 )
+		self.buffer.as_ref().split_at(offset * 4)
 	}
 }
 
 impl<B: AsRef<[u8]> + AsMut<[u8]>> PM for Packet<B> {
 	fn split_mut(&mut self) -> (&mut [u8], &mut [u8]) {
 		let offset = self.offset() as usize;
-		// let header_len = self.header().len();
 		self.buffer.as_mut().split_at_mut(offset * 4)
 	}
 }
