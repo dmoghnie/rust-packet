@@ -198,6 +198,9 @@ impl<B: AsRef<[u8]>> Packet<B> {
 			buffer: &self.buffer.as_ref()[20 .. (self.offset() as usize * 4)],
 		}
 	}
+	pub fn raw_options(&self) -> &[u8] {
+		&self.buffer.as_ref()[20 .. (self.offset() as usize * 4)]
+	}	
 }
 
 impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
