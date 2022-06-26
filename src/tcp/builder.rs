@@ -143,7 +143,7 @@ impl<B: Buffer> Builder<B> {
 
 		for byte in value {
 			self.buffer.more(1)?;
-			self.payload_length += 1;
+			// self.payload_length += 1;
 			*self.buffer.data_mut().last_mut().unwrap() = *byte;
 		}
 
