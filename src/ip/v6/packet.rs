@@ -34,7 +34,7 @@ header {
 payload {
     min:  0,
     max:  u16::max_value() as usize - 40,
-    size: p => (p.payload_length() - 40) as usize,
+    size: p => (p.payload_length()) as usize,
 });
 
 impl<B: AsRef<[u8]>> fmt::Debug for Packet<B> {
@@ -232,8 +232,8 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
     pub fn set_traffic_class(&mut self, value: u8) -> Result<&mut Self> {
         let old0 = self.buffer.as_ref()[0];
         let old1 = self.buffer.as_ref()[1];
-        self.buffer.as_mut()[0] = (old0 & 0b1111_0000) | (value >> 4);
-        self.buffer.as_mut()[1] = (old1 & 0b0000_1111) | (value << 4);
+        self.buffer.as_mut()[0] = (old0 & 0b1111_0000) | ((value & 0b1111_0000) >> 4);
+        self.buffer.as_mut()[1] = (old1 & 0b0000_1111) | ((value & 0b0000_1111) << 4);
 
         Ok(self)
     }

@@ -134,6 +134,21 @@ impl<B: Buffer> Builder<B> {
 		Ok(self)
 	}
 
+	pub fn options<'a, T: IntoIterator<Item = &'a u8>>(mut self, value: T) -> Result<Self> {
+		if self.options {
+			Err(Error::AlreadyDefined)?
+		}
+
+		self.options = true;
+		
+		for byte in value {
+			self.buffer.more(1)?;
+			// self.payload_length += 1;			
+			*self.buffer.data_mut().last_mut().unwrap() = *byte;
+		}
+
+		Ok(self)
+	}
 	/// Payload for the packet.
 	pub fn payload<'a, T: IntoIterator<Item = &'a u8>>(mut self, value: T) -> Result<Self> {
 		if self.payload {

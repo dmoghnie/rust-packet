@@ -38,7 +38,7 @@ sized!(Packet,
 	payload {
 		min:  0,
 		max:  u16::max_value() as usize - 60,
-		size: p => p.buffer.as_ref().len() - (p.header().len()),
+		size: p => p.buffer.as_ref().len() - (p.offset() as usize * 4),
 		
 	});
 
@@ -198,6 +198,9 @@ impl<B: AsRef<[u8]>> Packet<B> {
 			buffer: &self.buffer.as_ref()[20 .. (self.offset() as usize * 4)],
 		}
 	}
+	pub fn raw_options(&self) -> &[u8] {
+		&self.buffer.as_ref()[20 .. (self.offset() as usize * 4)]
+	}	
 }
 
 impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {

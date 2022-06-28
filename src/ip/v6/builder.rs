@@ -70,8 +70,9 @@ impl<B: Buffer> Builder<B> {
 	fn prepare(&mut self) {
 		let offset = self.buffer.offset();
 		self.finalizer.add(move |out| {
-			// Set the version to 4 and the header length.
-			out[offset] = (6 << 4);
+			// Set the version to 6 and the header length.
+			let old = out[offset];
+			out[offset] = (6 << 4) | (old & 0b0000_1111);
 
 			Ok(())
 		});
